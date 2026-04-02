@@ -1,62 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Home Loan Calculator (Repo + Spread)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f172a;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-    }
-    .container {
-      background: #1e293b;
-      padding: 30px;
-      border-radius: 12px;
-      width: 400px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.3);
-    }
-    h2 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-    input {
-      width: 100%;
-      padding: 8px;
-      margin-top: 5px;
-      border-radius: 6px;
-      border: none;
-    }
-    button {
-      width: 100%;
-      margin-top: 20px;
-      padding: 10px;
-      background: #22c55e;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .result {
-      margin-top: 20px;
-      background: #334155;
-      padding: 15px;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan Compare App</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #0f172a;
+  color: white;
+}
+
+/* App Container */
+.app {
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+}
+
+/* Card */
+.card {
+  background: rgba(255,255,255,0.05);
+  border-radius: 20px;
+  padding: 15px;
+  margin-bottom: 15px;
+  backdrop-filter: blur(20px);
+}
+
+/* Inputs */
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 12px;
+  border: none;
+  margin-top: 5px;
+  background: rgba(255,255,255,0.1);
+  color: white;
+}
+
+label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Results */
+.bank {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.07);
+}
+
+.best {
+  border: 2px solid #22c55e;
+}
+
+.emi {
+  color: #22c55e;
+  font-weight: bold;
+}
+
+.profit {
+  color: #f43f5e;
+  font-weight: bold;
+}
+
+/* Chart */
+canvas {
+  margin-top: 20px;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container">
-  <h2>🏠 Loan Calculator</h2>
+<div class="app">
 
+<h2 style="text-align:center;">🏠 Loan Compare</h2>
+
+<!-- Inputs -->
+<div class="card">
   <label>Loan Amount (₹)</label>
   <input type="number" id="loan" value="5000000">
 
@@ -66,45 +93,107 @@
   <label>RBI Repo Rate (%)</label>
   <input type="number" id="repo" value="6.5">
 
-  <label>Bank Spread (%)</label>
-  <input type="number" id="spread" value="1.5">
+  <label>Spread A (%)</label>
+  <input type="number" id="s1" value="1.5">
 
-  <button onclick="calculate()">Calculate</button>
+  <label>Spread B (%)</label>
+  <input type="number" id="s2" value="2">
 
-  <div class="result" id="output"></div>
+  <label>Spread C (%)</label>
+  <input type="number" id="s3" value="1.2">
+</div>
+
+<!-- Results -->
+<div class="card">
+  <div id="b1" class="bank"></div>
+  <div id="b2" class="bank"></div>
+  <div id="b3" class="bank"></div>
+</div>
+
+<!-- Chart -->
+<div class="card">
+  <canvas id="chart"></canvas>
+</div>
+
 </div>
 
 <script>
-function calculate() {
-  let P = parseFloat(document.getElementById("loan").value);
-  let years = parseFloat(document.getElementById("tenure").value);
-  let repo = parseFloat(document.getElementById("repo").value);
-  let spread = parseFloat(document.getElementById("spread").value);
+const inputs = document.querySelectorAll("input");
+inputs.forEach(i => i.addEventListener("input", update));
 
-  let totalRate = repo + spread;
-  let r = totalRate / 12 / 100;
-  let n = years * 12;
+function calc(spread){
+  let P = +loan.value;
+  let Y = +tenure.value;
+  let repoVal = +repo.value;
 
-  let emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
-  let totalPayment = emi * n;
-  let totalInterest = totalPayment - P;
+  let rate = repoVal + spread;
+  let r = rate/12/100;
+  let n = Y*12;
 
-  let repoRatio = repo / totalRate;
-  let spreadRatio = spread / totalRate;
+  let emi = (P*r*Math.pow(1+r,n))/(Math.pow(1+r,n)-1);
+  let total = emi*n;
+  let interest = total - P;
+  let profit = interest*(spread/rate);
 
-  let repoInterest = totalInterest * repoRatio;
-  let spreadInterest = totalInterest * spreadRatio;
-
-  document.getElementById("output").innerHTML = `
-    <p><b>Total Interest Rate:</b> ${totalRate.toFixed(2)}%</p>
-    <p><b>EMI:</b> ₹${emi.toFixed(0)}</p>
-    <p><b>Total Payment:</b> ₹${totalPayment.toFixed(0)}</p>
-    <p><b>Total Interest:</b> ₹${totalInterest.toFixed(0)}</p>
-    <hr>
-    <p><b>Repo Interest:</b> ₹${repoInterest.toFixed(0)}</p>
-    <p><b>Bank Spread Interest:</b> ₹${spreadInterest.toFixed(0)}</p>
-  `;
+  return {emi, interest, profit};
 }
+
+let chart;
+
+function update(){
+  let A = calc(+s1.value);
+  let B = calc(+s2.value);
+  let C = calc(+s3.value);
+
+  let data = [A,B,C];
+
+  // Render UI
+  [A,B,C].forEach((d,i)=>{
+    document.getElementById("b"+(i+1)).innerHTML = `
+      <b>Bank ${String.fromCharCode(65+i)}</b><br>
+      EMI: <span class="emi">₹${Math.round(d.emi).toLocaleString('en-IN')}</span><br>
+      Interest: ₹${Math.round(d.interest).toLocaleString('en-IN')}<br>
+      Profit: <span class="profit">₹${Math.round(d.profit).toLocaleString('en-IN')}</span>
+    `;
+  });
+
+  // Highlight best
+  let min = Math.min(A.interest,B.interest,C.interest);
+  document.querySelectorAll(".bank").forEach(b=>b.classList.remove("best"));
+  if(A.interest===min) b1.classList.add("best");
+  if(B.interest===min) b2.classList.add("best");
+  if(C.interest===min) b3.classList.add("best");
+
+  // Chart
+  let values = [
+    A.interest/100000,
+    B.interest/100000,
+    C.interest/100000
+  ];
+
+  if(chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: 'bar',
+    data: {
+      labels: ['Bank A','Bank B','Bank C'],
+      datasets: [{
+        label: 'Interest (Lakhs ₹)',
+        data: values
+      }]
+    },
+    options: {
+      animation: {
+        duration: 1200
+      },
+      plugins: {
+        legend: { display: false }
+      }
+    }
+  });
+}
+
+update();
 </script>
 
 </body>
